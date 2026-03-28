@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BirdCam Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ── Reset & base ──────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f10;
+    --panel:     #161a1d;
+    --border:    #242a2e;
+    --amber:     #f5a623;
+    --amber-dim: #7d5412;
+    --cyan:      #00c8b4;
+    --red:       #ef4444;
+    --text:      #c8cdd2;
+    --muted:     #4b5563;
+    --font-mono: 'DM Mono', monospace;
+    --font-head: 'Syne', sans-serif;
+    --radius:    6px;
+    --trans:     200ms ease;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  /* ── Layout ────────────────────────────────────────────────────────────── */
+  #app {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  #main-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 220px;
+    gap: 1px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .col {
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Panels ────────────────────────────────────────────────────────────── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+
+  .panel-title {
+    font-family: var(--font-head);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── Status badge ──────────────────────────────────────────────────────── */
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot.live   { background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse-green 2s infinite; }
+  .dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  .badge-label { font-size: 12px; font-weight: 500; }
+  .badge-sub   { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* ── Metrics row ───────────────────────────────────────────────────────── */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .metric {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+
+  .metric-label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .metric-value { font-size: 18px; font-weight: 500; color: var(--cyan); margin-top: 2px; }
+
+  /* ── Buttons ───────────────────────────────────────────────────────────── */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 9px 14px;
+    transition: all var(--trans);
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #000;
+    width: 100%;
+  }
+  .btn-primary:hover  { background: #ffc04a; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    width: 100%;
+  }
+  .btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid transparent;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .btn-danger:hover { border-color: var(--red); }
+
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Divider ───────────────────────────────────────────────────────────── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Collapsible ───────────────────────────────────────────────────────── */
+  .collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .collapsible-header .arrow {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform var(--trans);
+  }
+  .collapsible-header.open .arrow { transform: rotate(180deg); }
+
+  .collapsible-body {
+    display: none;
+    margin-top: 12px;
+  }
+  .collapsible-body.open { display: block; }
+
+  /* ── Config panel form ─────────────────────────────────────────────────── */
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    letter-spacing: 0.06em;
+  }
+
+  .form-label span {
+    float: right;
+    color: var(--amber);
+    font-size: 12px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--amber);
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    transition: border-color var(--trans);
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--amber);
+  }
+
+  /* ── Live feed panel ───────────────────────────────────────────────────── */
+  .col.feed-col {
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+  }
+
+  #feed-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  #feed-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* Scanline overlay — CSS only, no images */
+  #feed-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.04) 3px,
+      rgba(0,0,0,0.04) 4px
+    );
+    z-index: 2;
+  }
+
+  .feed-label {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.55);
+    z-index: 3;
+    text-transform: uppercase;
+  }
+
+  #feed-clock {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    z-index: 3;
+  }
+
+  /* No-signal placeholder */
+  #no-signal {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: #050606;
+    z-index: 4;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  #no-signal.visible { display: flex; }
+
+  .no-signal-text {
+    font-family: var(--font-head);
+    font-size: 24px;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    animation: flicker 3s infinite;
+  }
+
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96%            { opacity: 0.2; }
+    97%            { opacity: 0.9; }
+    98%            { opacity: 0.3; }
+  }
+
+  /* ── Frame gallery ─────────────────────────────────────────────────────── */
+  .frame-count-badge {
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  #frame-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .thumb-item {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--trans);
+  }
+  .thumb-item:hover { border-color: var(--amber); }
+
+  .thumb-item img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+  }
+
+  .thumb-meta {
+    padding: 4px 6px;
+    font-size: 9px;
+    color: var(--muted);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .thumb-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.7);
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 2px 6px;
+    display: none;
+    cursor: pointer;
+  }
+  .thumb-item:hover .thumb-delete { display: block; }
+
+  /* Timelapse spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--amber-dim);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #timelapse-preview {
+    margin-top: 10px;
+    display: none;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color var(--trans);
+  }
+  #timelapse-preview:hover { border-color: var(--cyan); }
+  #timelapse-preview img { width: 100%; display: block; }
+
+  /* ── Lightbox ──────────────────────────────────────────────────────────── */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
+
+  /* ── Log bar (bottom) ──────────────────────────────────────────────────── */
+  #log-bar {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #log-bar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  #log-bar-header:hover { background: rgba(255,255,255,0.02); }
+
+  .log-bar-title {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  #log-bar-header .arrow { font-size: 10px; color: var(--muted); transition: transform var(--trans); }
+  #log-bar-header.open .arrow { transform: rotate(180deg); }
+
+  #log-pane {
+    display: none;
+    height: 180px;
+    overflow-y: auto;
+    padding: 8px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  #log-pane.open { display: block; }
+
+  .log-line {
+    font-size: 11px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .log-line.INFO    { color: #6b7280; }
+  .log-line.WARNING { color: var(--amber); }
+  .log-line.ERROR   { color: var(--red); }
+  .log-line.DEFAULT { color: var(--muted); }
+
+  #log-clear-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  #log-clear-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* ── Toast notifications ───────────────────────────────────────────────── */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    border-left: 3px solid;
+    background: var(--panel);
+    animation: slide-in 0.2s ease, fade-out 0.3s ease 2.7s forwards;
+    max-width: 300px;
+  }
+  .toast.success { border-color: var(--cyan);  color: var(--cyan); }
+  .toast.warning { border-color: var(--amber); color: var(--amber); }
+  .toast.error   { border-color: var(--red);   color: var(--red); }
+
+  @keyframes slide-in  { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+  @keyframes fade-out  { to { opacity: 0; } }
+
+  /* ── Scrollbar styling ─────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Main 3-column grid ─────────────────────────────────────────── -->
+  <div id="main-grid">
+
+    <!-- ── Left column: Status & Controls ──────────────────────────── -->
+    <div class="col">
+
+      <div>
+        <p class="panel-title">Camera Status</p>
+        <div class="status-badge" id="status-badge">
+          <div class="dot offline" id="status-dot"></div>
+          <span class="badge-label" id="status-label">CONNECTING…</span>
+          <span class="badge-sub" id="status-sub"></span>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">Time</div>
+          <div class="metric-value" id="clock" style="font-size:14px">--:--:--</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Uptime</div>
+          <div class="metric-value" id="uptime" style="font-size:14px">--</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CPU Temp</div>
+          <div class="metric-value" id="cpu-temp">--°C</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Frames</div>
+          <div class="metric-value" id="saved-frames">--</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="capture-btn">Capture Frame Now</button>
+
+      <hr />
+
+      <!-- Config collapsible -->
+      <div class="panel">
+        <div class="collapsible-header" id="config-toggle">
+          <span class="panel-title" style="margin:0">Configuration</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="collapsible-body" id="config-body">
+          <div class="form-group">
+            <label class="form-label">
+              Capture interval
+              <span id="interval-label">60s</span>
+            </label>
+            <input type="range" id="interval-slider" min="10" max="3600" step="10" value="60" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max frames</label>
+            <input type="number" id="max-frames-input" min="1" max="10000" value="100" />
+          </div>
+          <button class="btn-secondary" id="save-config-btn" style="margin-top:4px">Save Config</button>
+          <div id="config-status" style="margin-top:8px; font-size:11px; color:var(--muted)"></div>
+        </div>
+      </div>
+
+    </div><!-- /left col -->
+
+    <!-- ── Centre column: Live Feed ─────────────────────────────────── -->
+    <div class="col feed-col">
+      <div id="feed-wrap">
+        <span class="feed-label">CAM 01 / LIVE</span>
+        <img id="feed-img" src="/stream" alt="live feed"
+             onerror="showNoSignal()" onload="hideNoSignal()" />
+        <div id="no-signal">
+          <div class="no-signal-text">NO SIGNAL</div>
+          <div style="font-size:11px; color:var(--muted)">Attempting to reconnect…</div>
+        </div>
+        <div id="feed-clock"></div>
+      </div>
+    </div><!-- /centre col -->
+
+    <!-- ── Right column: Frames & Timelapse ─────────────────────────── -->
+    <div class="col">
+
+      <div class="panel">
+        <p class="panel-title">Timelapse</p>
+        <button class="btn-primary" id="gen-timelapse-btn">Generate Timelapse</button>
+        <div id="timelapse-preview">
+          <img id="timelapse-img" src="" alt="timelapse preview" />
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <p class="panel-title" style="margin:0">Saved Frames</p>
+          <span class="frame-count-badge" id="frame-badge">0</span>
+        </div>
+        <div id="frame-grid"></div>
+        <div style="margin-top:10px;">
+          <button class="btn-danger" id="clear-all-btn" style="width:100%">Clear All Frames</button>
+        </div>
+      </div>
+
+    </div><!-- /right col -->
+  </div><!-- /main-grid -->
+
+  <!-- ── Bottom: Log bar ────────────────────────────────────────────── -->
+  <div id="log-bar">
+    <div id="log-bar-header">
+      <span class="log-bar-title">Live Logs</span>
+      <span class="arrow">▼</span>
+      <button id="log-clear-btn">Clear</button>
+    </div>
+    <div id="log-pane"></div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+'use strict';
+
+// ── Utility ────────────────────────────────────────────────────────────────
+
+/**
+ * showToast(message, type)
+ * Display a corner notification for 3 seconds.
+ * type: 'success' | 'warning' | 'error'
+ */
+function showToast(message, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3100);
+}
+
+/**
+ * fmtUptime(seconds)
+ * Convert a raw second count to a human-readable string like "2h 14m".
+ */
+function fmtUptime(s) {
+  if (s < 60)  return `${s}s`;
+  if (s < 3600) return `${Math.floor(s/60)}m ${s%60}s`;
+  return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
+}
+
+/** Show the no-signal overlay on stream load failure. */
+function showNoSignal() {
+  document.getElementById('no-signal').classList.add('visible');
+}
+
+/** Hide the no-signal overlay when stream recovers. */
+function hideNoSignal() {
+  document.getElementById('no-signal').classList.remove('visible');
+}
+
+// ── STATUS POLLING ──────────────────────────────────────────────────────────
+/*
+ * Polls /api/status every 5 seconds to update the status badge,
+ * uptime, CPU temperature, and saved frame count.
+ */
+function initStatusPolling() {
+  async function poll() {
+    try {
+      const res = await fetch('/api/status');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+
+      const dot   = document.getElementById('status-dot');
+      const label = document.getElementById('status-label');
+      const sub   = document.getElementById('status-sub');
+
+      if (d.connected) {
+        dot.className = 'dot live';
+        label.textContent = 'LIVE';
+      } else {
+        dot.className = 'dot offline';
+        label.textContent = 'OFFLINE';
+      }
+      sub.textContent = `${d.frame_count} streamed`;
+
+      document.getElementById('uptime').textContent = fmtUptime(d.uptime_s);
+      document.getElementById('cpu-temp').textContent =
+        d.cpu_temp_c !== null ? `${d.cpu_temp_c.toFixed(1)}°C` : 'N/A';
+      document.getElementById('saved-frames').textContent = d.saved_frames;
+
+    } catch (e) {
+      document.getElementById('status-label').textContent = 'ERROR';
+    }
+  }
+
+  poll();
+  setInterval(poll, 5000);
+}
+
+// === STREAM HEALTH CHECK ===
+/*
+ * Independently monitors the <img> stream element.
+ * If the MJPEG stream goes dead (e.g. server restart), the img onerror
+ * fires and we show the NO SIGNAL overlay, then retry the src every 5s.
+ */
+function initStreamHealthCheck() {
+  const img = document.getElementById('feed-img');
+
+  img.addEventListener('error', () => {
+    showNoSignal();
+    // After 5s attempt to reconnect by reloading the src.
+    setTimeout(() => {
+      img.src = '/stream?' + Date.now(); // cache-bust
+    }, 5000);
+  });
+}
+
+// === STATUS POLLING — clock update ===
+/*
+ * Updates the local time display every second.
+ * Also drives the timestamp overlay on the live feed.
+ */
+function initClock() {
+  function tick() {
+    const now = new Date();
+    const ts = now.toLocaleTimeString('en-GB', { hour12: false });
+    document.getElementById('clock').textContent = ts;
+    document.getElementById('feed-clock').textContent =
+      now.toISOString().replace('T', '  ').slice(0, 19);
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// === FRAME GALLERY ===
+/*
+ * Loads the frame list from /api/frames and renders the 2-column thumbnail
+ * grid in the right panel. Each thumbnail has a delete button on hover and
+ * opens the lightbox on click.
+ */
+function initFrameGallery() {
+  const grid  = document.getElementById('frame-grid');
+  const badge = document.getElementById('frame-badge');
+
+  async function loadFrames() {
+    try {
+      const res = await fetch('/api/frames');
+      const frames = await res.json();
+
+      badge.textContent = frames.length;
+      grid.innerHTML = '';
+
+      if (frames.length === 0) {
+        grid.innerHTML = '<div style="color:var(--muted);font-size:11px;grid-column:span 2">No frames yet</div>';
+        return;
+      }
+
+      for (const f of frames) {
+        const item = document.createElement('div');
+        item.className = 'thumb-item';
+
+        const img = document.createElement('img');
+        img.src = `/api/frames/${f.filename}`;
+        img.loading = 'lazy';
+        img.alt = f.filename;
+
+        const meta = document.createElement('div');
+        meta.className = 'thumb-meta';
+        meta.textContent = f.timestamp.slice(11, 19); // HH:MM:SS
+
+        const del = document.createElement('button');
+        del.className = 'thumb-delete';
+        del.textContent = '✕';
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm(`Delete ${f.filename}?`)) return;
+          try {
+            const r = await fetch(`/api/frames/${f.filename}`, { method: 'DELETE' });
+            if (!r.ok) throw new Error();
+            showToast(`Deleted ${f.filename}`, 'success');
+            loadFrames();
+          } catch {
+            showToast('Delete failed', 'error');
+          }
+        });
+
+        item.addEventListener('click', () => openLightbox(`/api/frames/${f.filename}`));
+        item.appendChild(img);
+        item.appendChild(meta);
+        item.appendChild(del);
+        grid.appendChild(item);
+      }
+    } catch (e) {
+      showToast('Failed to load frames', 'error');
+    }
+  }
+
+  loadFrames();
+  // Refresh every 30s so the gallery stays in sync with the scheduler.
+  setInterval(loadFrames, 30000);
+
+  // Expose for manual refresh (used by the capture button handler).
+  window._refreshFrames = loadFrames;
+
+  // Clear all frames.
+  document.getElementById('clear-all-btn').addEventListener('click', async () => {
+    if (!confirm('Delete ALL saved frames? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/frames');
+      const frames = await res.json();
+      await Promise.all(
+        frames.map(f => fetch(`/api/frames/${f.filename}`, { method: 'DELETE' }))
+      );
+      showToast(`Deleted ${frames.length} frames`, 'success');
+      loadFrames();
+    } catch {
+      showToast('Clear failed', 'error');
+    }
+  });
+}
+
+// === TIMELAPSE ===
+/*
+ * Handles the "Generate Timelapse" button: POSTs to /api/timelapse/generate,
+ * shows a spinner while polling for completion, then reveals the preview.
+ */
+function initTimelapse() {
+  const btn     = document.getElementById('gen-timelapse-btn');
+  const preview = document.getElementById('timelapse-preview');
+  const img     = document.getElementById('timelapse-img');
+
+  // Check if a timelapse already exists on load.
+  fetch('/api/timelapse/preview', { method: 'HEAD' })
+    .then(r => { if (r.ok) showPreview(); })
+    .catch(() => {});
+
+  function showPreview() {
+    img.src = '/api/timelapse/preview?' + Date.now();
+    preview.style.display = 'block';
+  }
+
+  preview.addEventListener('click', () => openLightbox(img.src));
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Generating…';
+
+    try {
+      const res = await fetch('/api/timelapse/generate', { method: 'POST' });
+      const d   = await res.json();
+
+      if (d.status === 'already_running') {
+        showToast('Generation already in progress', 'warning');
+        btn.disabled = false;
+        btn.textContent = 'Generate Timelapse';
+        return;
+      }
+
+      // Poll /api/timelapse/preview until the file appears.
+      const poll = setInterval(async () => {
+        const r = await fetch('/api/timelapse/preview', { method: 'HEAD' }).catch(() => null);
+        if (r && r.ok) {
+          clearInterval(poll);
+          showPreview();
+          btn.disabled = false;
+          btn.textContent = 'Generate Timelapse';
+          showToast('Timelapse generated', 'success');
+        }
+      }, 2000);
+
+    } catch (e) {
+      showToast('Timelapse generation failed', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Generate Timelapse';
+    }
+  });
+}
+
+// === CONFIG PANEL ===
+/*
+ * Manages the collapsible config section. Loads current values from
+ * /api/config on open and saves updated values via POST /api/config.
+ */
+function initConfigPanel() {
+  const toggle = document.getElementById('config-toggle');
+  const body   = document.getElementById('config-body');
+  const slider = document.getElementById('interval-slider');
+  const label  = document.getElementById('interval-label');
+  const maxIn  = document.getElementById('max-frames-input');
+  const saveBtn= document.getElementById('save-config-btn');
+  const status = document.getElementById('config-status');
+
+  // Load current config values.
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/config');
+      const d   = await res.json();
+      slider.value = d.capture_interval_seconds;
+      updateLabel(d.capture_interval_seconds);
+      maxIn.value = d.max_frames;
+    } catch {}
+  }
+
+  function updateLabel(s) {
+    s = parseInt(s, 10);
+    if (s < 60)   label.textContent = `${s}s`;
+    else if (s < 3600) label.textContent = `${Math.floor(s/60)}m ${s%60 ? s%60+'s' : ''}`.trim();
+    else label.textContent = `${(s/3600).toFixed(1)}h`;
+  }
+
+  slider.addEventListener('input', () => updateLabel(slider.value));
+
+  // Collapsible toggle.
+  toggle.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+    if (open) loadConfig();
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    status.textContent = '';
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          capture_interval_seconds: parseInt(slider.value, 10),
+          max_frames: parseInt(maxIn.value, 10),
+        }),
+      });
+      const d = await res.json();
+      if (d.ok) {
+        status.style.color = 'var(--cyan)';
+        status.textContent = 'Saved. Restart to apply interval change.';
+        showToast('Config saved', 'success');
+      } else {
+        status.style.color = 'var(--red)';
+        status.textContent = d.error || 'Save failed';
+      }
+    } catch {
+      status.style.color = 'var(--red)';
+      status.textContent = 'Request failed';
+    }
+    saveBtn.disabled = false;
+  });
+}
+
+// === LOG STREAM ===
+/*
+ * Connects to the /api/logs/stream SSE endpoint when the log pane is
+ * opened. Disconnects when closed. Colour-codes lines by log level.
+ * Max 200 lines — oldest are trimmed automatically.
+ */
+function initLogStream() {
+  const header  = document.getElementById('log-bar-header');
+  const pane    = document.getElementById('log-pane');
+  const clearBtn= document.getElementById('log-clear-btn');
+  let evtSource = null;
+  const MAX_LINES = 200;
+
+  function levelClass(line) {
+    if (/\bERROR\b/.test(line))   return 'ERROR';
+    if (/\bWARNING\b/.test(line)) return 'WARNING';
+    if (/\bINFO\b/.test(line))    return 'INFO';
+    return 'DEFAULT';
+  }
+
+  function appendLine(text) {
+    const div = document.createElement('div');
+    div.className = `log-line ${levelClass(text)}`;
+    div.textContent = text;
+    pane.appendChild(div);
+
+    // Trim oldest lines.
+    while (pane.children.length > MAX_LINES) {
+      pane.removeChild(pane.firstChild);
+    }
+
+    pane.scrollTop = pane.scrollHeight;
+  }
+
+  function connect() {
+    if (evtSource) return;
+    evtSource = new EventSource('/api/logs/stream');
+    evtSource.onmessage = (e) => {
+      if (e.data) appendLine(e.data);
+    };
+    evtSource.onerror = () => {
+      appendLine('--- stream error, retrying ---');
+    };
+  }
+
+  function disconnect() {
+    if (evtSource) {
+      evtSource.close();
+      evtSource = null;
+    }
+  }
+
+  header.addEventListener('click', (e) => {
+    if (e.target === clearBtn) return; // handled below
+    const open = pane.classList.toggle('open');
+    header.classList.toggle('open', open);
+    if (open) connect();
+    else disconnect();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    pane.innerHTML = '';
+  });
+}
+
+// === CAPTURE BUTTON ===
+/*
+ * POSTs /api/capture to trigger an immediate frame save and refreshes
+ * the frame gallery on success.
+ */
+function initCaptureButton() {
+  document.getElementById('capture-btn').addEventListener('click', async function () {
+    this.disabled = true;
+    try {
+      const res = await fetch('/api/capture', { method: 'POST' });
+      if (!res.ok) throw new Error();
+      showToast('Frame captured', 'success');
+      if (window._refreshFrames) window._refreshFrames();
+    } catch {
+      showToast('Capture failed', 'error');
+    }
+    this.disabled = false;
+  });
+}
+
+// === LIGHTBOX ===
+/*
+ * Opens a full-screen image modal. Click anywhere to close.
+ */
+function openLightbox(src) {
+  const lb  = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  img.src = src;
+  lb.classList.add('open');
+}
+
+function initLightbox() {
+  document.getElementById('lightbox').addEventListener('click', () => {
+    document.getElementById('lightbox').classList.remove('open');
+  });
+}
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initClock();
+  initStatusPolling();
+  initStreamHealthCheck();
+  initFrameGallery();
+  initTimelapse();
+  initConfigPanel();
+  initLogStream();
+  initCaptureButton();
+  initLightbox();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Environment — never commit credentials
+.env
+
+# Captured frames and generated output
+frames/
+*.gif
+timelapse.jpg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
