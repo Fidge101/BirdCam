@@ -50,10 +50,13 @@ OpenCV's Pi wheels depend on a few native libraries. Install them first:
 
 ```bash
 sudo apt update
-sudo apt install -y libatlas-base-dev libopenblas-dev libhdf5-dev libhdf5-serial-dev
+sudo apt install -y libopenblas-dev libhdf5-dev libhdf5-serial-dev
 # Optional: for the OpenCV display window (not needed in --web / headless mode)
 sudo apt install -y libgtk-3-dev
 ```
+
+> **Note:** `libatlas-base-dev` was removed in Raspberry Pi OS Bookworm (2023).
+> `libopenblas-dev` is its replacement and is already included above.
 
 ### Python dependencies
 
