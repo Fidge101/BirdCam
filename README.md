@@ -74,6 +74,27 @@ pip install -r requirements.txt
 
 `imageio` is optional — only needed for animated GIF output from `--timelapse`.
 
+### Updating an existing install
+
+If you already cloned the repo and want to pull the latest changes:
+
+```bash
+cd birdcam
+source .venv/bin/activate
+
+# Pull the latest code
+git pull origin main
+
+# Re-run pip in case new dependencies were added
+pip install -r requirements.txt
+```
+
+If the update also changed the OpenCV requirement, re-run the apt step too:
+
+```bash
+sudo apt install -y python3-opencv
+```
+
 ---
 
 ## 3. Configuration
