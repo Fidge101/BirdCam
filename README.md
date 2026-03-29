@@ -44,35 +44,18 @@ The camera exposes two streams:
 
 ## 2. Raspberry Pi install
 
-### Install OpenCV
+### Install OpenCV (via apt — required on Pi)
 
-**Option A — apt (recommended on Pi, pre-compiled, never needs to build from source):**
+pip cannot reliably build or download a pre-built OpenCV wheel for all
+Raspberry Pi OS / Python version combinations. Install it from apt instead
+— it is always pre-compiled for the Pi:
 
 ```bash
 sudo apt update
 sudo apt install -y python3-opencv
 ```
 
-This installs the full OpenCV build including GUI support (needed for `--live` mode).
-
-**Option B — pip (if you prefer a venv or need a newer version):**
-
-```bash
-sudo apt update
-sudo apt install -y libopenblas-dev libhdf5-dev libhdf5-serial-dev
-```
-
-> **Note:** `libatlas-base-dev` was removed in Raspberry Pi OS Bookworm (2023).
-> `libopenblas-dev` is its replacement.
-
-`requirements.txt` uses `opencv-python-headless` which has pre-built ARM wheels
-and avoids the source-build failure you get with `opencv-python`. It supports all
-BirdCam modes **except** `--live` (which needs `cv2.imshow`). If you need `--live`
-on a Pi with a display, either use Option A above or run:
-
-```bash
-pip install "opencv-python>=4.8,<5"
-```
+This covers all BirdCam modes including `--live` (GUI window).
 
 ### Python dependencies
 
@@ -81,11 +64,11 @@ pip install "opencv-python>=4.8,<5"
 git clone https://github.com/fidge101/birdcam.git
 cd birdcam
 
-# Create a virtual environment (recommended)
-python3 -m venv .venv --system-site-packages   # --system-site-packages picks up apt OpenCV
+# Create a venv that can see the apt-installed OpenCV
+python3 -m venv .venv --system-site-packages
 source .venv/bin/activate
 
-# Install remaining dependencies (opencv already covered by apt or installed above)
+# Install the remaining dependencies (OpenCV is handled by apt above)
 pip install -r requirements.txt
 ```
 

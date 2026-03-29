@@ -1,8 +1,18 @@
-# opencv-python-headless: lighter build, better ARM wheel coverage on Pi.
-# Supports all BirdCam features (VideoCapture, imencode, putText, etc.).
-# For --live mode (cv2.imshow GUI window) you need the full GUI variant —
-# see README for how to install system OpenCV via apt instead.
-opencv-python-headless>=4.8,<5
+# OpenCV is intentionally excluded here.
+# Pre-built pip wheels for opencv-python / opencv-python-headless are not
+# reliably available for all Raspberry Pi OS / Python version combinations.
+# Install it via apt instead — it is always pre-compiled for the Pi:
+#
+#   sudo apt install python3-opencv
+#
+# Then create your venv with --system-site-packages so it can see the apt package:
+#
+#   python3 -m venv .venv --system-site-packages
+#   source .venv/bin/activate
+#
+# If you are NOT on a Pi and want pip to manage OpenCV:
+#   pip install "opencv-python-headless>=4.8,<5"
+
 Pillow>=10.3,<11
 python-dotenv>=1.0,<2
 imageio>=2.34,<3
