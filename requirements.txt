@@ -1,6 +1,10 @@
-opencv-python==4.9.0.80
-Pillow==10.3.0
-python-dotenv==1.0.1
-imageio==2.34.0
-flask==3.0.3
-flask-cors==4.0.1
+# opencv-python-headless: lighter build, better ARM wheel coverage on Pi.
+# Supports all BirdCam features (VideoCapture, imencode, putText, etc.).
+# For --live mode (cv2.imshow GUI window) you need the full GUI variant —
+# see README for how to install system OpenCV via apt instead.
+opencv-python-headless>=4.8,<5
+Pillow>=10.3,<11
+python-dotenv>=1.0,<2
+imageio>=2.34,<3
+flask>=3.0,<4
+flask-cors>=4.0,<5
